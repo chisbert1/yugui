@@ -23,9 +23,7 @@ class StatsHeader extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.parseBorder(
-          Border.all(color: AppTheme.cardBorder, width: 1),
-        ),
+        border: Border.all(color: AppTheme.cardBorder, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),

@@ -101,7 +101,7 @@ class AppTheme {
         iconTheme: IconThemeData(color: primaryGold),
         titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surface,
         elevation: 2,
         shape: RoundedRectangleBorder(

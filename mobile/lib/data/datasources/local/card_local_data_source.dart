@@ -3,10 +3,10 @@
 // Queries the local SQLite card database (yugioh_lite.db).
 // Fast offline reads for OCR lookups, catalog searching, and sets.
 
+import 'package:yugioh_collector/data/models/card_model.dart';
+import 'package:yugioh_collector/data/models/card_set_link_model.dart';
+import 'package:yugioh_collector/data/models/set_model.dart';
 import 'database_helper.dart';
-import '../models/card_model.dart';
-import '../models/card_set_link_model.dart';
-import '../models/set_model.dart';
 
 class CardLocalDataSource {
   final DatabaseHelper _dbHelper = DatabaseHelper();
