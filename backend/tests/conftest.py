@@ -26,26 +26,29 @@ from app.models.master_set import MasterSet
 from app.models.card_sets_link import CardSetsLink
 from app.models.user import User
 
-import os
 from sqlalchemy import event
+from sqlalchemy.pool import StaticPool
 
-# ── Database engine (PostgreSQL in CI, SQLite fallback) ──────────────────────
-TEST_DB_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+import sqlite3
 
-connect_args = {"check_same_thread": False} if "sqlite" in TEST_DB_URL else {}
+sqlite3.register_adapter(uuid.UUID, str)
+
+# ── In-memory SQLite engine with StaticPool ─────────────────────────────────
+TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
+
 test_engine = create_async_engine(
     TEST_DB_URL,
-    connect_args=connect_args,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
 )
 
 
-if "sqlite" in TEST_DB_URL:
-    @event.listens_for(test_engine.sync_engine, "connect")
-    def register_functions(dbapi_connection, connection_record):
-        if hasattr(dbapi_connection, "create_function"):
-            import datetime
-            dbapi_connection.create_function("NOW", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
-            dbapi_connection.create_function("now", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+@event.listens_for(test_engine.sync_engine, "connect")
+def register_functions(dbapi_connection, connection_record):
+    if hasattr(dbapi_connection, "create_function"):
+        import datetime
+        dbapi_connection.create_function("NOW", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+        dbapi_connection.create_function("now", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
 
 
 TestSessionLocal = async_sessionmaker(
