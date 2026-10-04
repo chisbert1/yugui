@@ -48,12 +48,20 @@ async def create_tables():
         await conn.run_sync(Base.metadata.drop_all)
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def clean_db_per_test():
+    """Wipe tables before each test to guarantee absolute test isolation."""
+    yield
+    async with test_engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
+
+
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Provide a transactional session that rolls back after each test."""
+    """Provide a transactional session per test."""
     async with TestSessionLocal() as session:
         yield session
-        await session.rollback()
 
 
 @pytest_asyncio.fixture
