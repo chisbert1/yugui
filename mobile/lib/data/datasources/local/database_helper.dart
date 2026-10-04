@@ -4,11 +4,11 @@
 // 1. Lite Card Database (yugioh_lite.db) - offline catalog downloaded from backend.
 // 2. User Inventory Database (inventory.db) - user collection and offline sync queue.
 
-import 'dart:io';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../core/constants/app_constants.dart';
+import 'initial_card_seed.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -42,7 +42,7 @@ class DatabaseHelper {
 
     // If card DB doesn't exist yet, create a baseline schema
     // (This will be replaced completely when full lite DB is downloaded from backend)
-    return await openDatabase(
+    final db = await openDatabase(
       path,
       version: AppConstants.localDbVersion,
       onCreate: (db, version) async {
@@ -91,8 +91,14 @@ class DatabaseHelper {
         await db.execute('CREATE INDEX IF NOT EXISTS idx_csl_card_id ON card_sets_link(card_id);');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_csl_set_id ON card_sets_link(set_id);');
         await db.execute('CREATE INDEX IF NOT EXISTS idx_cards_name ON master_cards(name);');
+
+        await InitialCardSeed.seedIfEmpty(db);
       },
     );
+
+    // Ensure database is populated if opened from an existing empty database
+    await InitialCardSeed.seedIfEmpty(db);
+    return db;
   }
 
   Future<Database> _initInventoryDb() async {

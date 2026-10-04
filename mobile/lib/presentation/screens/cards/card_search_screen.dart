@@ -65,12 +65,10 @@ class _CardSearchScreenState extends ConsumerState<CardSearchScreen> {
             child: state.isLoading
                 ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold))
                 : state.cards.isEmpty
-                    ? Center(
+                    ? const Center(
                         child: Text(
-                          _controller.text.isEmpty
-                              ? 'Escribe el nombre de una carta para buscar en la base de datos'
-                              : 'No se encontraron cartas que coincidan',
-                          style: const TextStyle(color: AppTheme.textMuted),
+                          'No se encontraron cartas en el catálogo',
+                          style: TextStyle(color: AppTheme.textMuted),
                         ),
                       )
                     : GridView.builder(

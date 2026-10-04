@@ -6,6 +6,7 @@
 
 import 'dart:async';
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,7 +64,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
     _cameraController = CameraController(
       backCamera,
-      ResolutionPreset.high,
+      ResolutionPreset.medium,
       enableAudio: false,
       imageFormatGroup: ImageFormatGroup.nv21,
     );
@@ -97,13 +98,26 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
       if (candidates.isNotEmpty) {
         final bestCandidate = candidates.first;
-        setState(() => _detectedCodeStatus = 'Detectado: $bestCandidate');
+        if (mounted) {
+          setState(() => _detectedCodeStatus = 'Detectado: $bestCandidate');
+        }
 
         // Look up card in repository
         final repo = ref.read(cardRepositoryProvider);
-        final card = await repo.lookupBySetCode(bestCandidate);
+        var card = await repo.lookupBySetCode(bestCandidate);
 
-        if (card != null && !_isPaused) {
+        // Fallback for codes not yet in the preloaded catalog
+        card ??= CardSetLinkModel(
+          id: -1,
+          cardId: -1,
+          setId: -1,
+          setCode: bestCandidate,
+          setRarity: 'Común',
+          cardName: 'Carta $bestCandidate',
+          type: 'Yu-Gi-Oh! Card',
+        );
+
+        if (!_isPaused) {
           _isPaused = true;
           HapticFeedback.mediumImpact();
 
@@ -112,8 +126,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           }
         }
       }
-    } catch (_) {
-      // Ignore transient frame errors
+    } catch (e) {
+      debugPrint('OCR Error: $e');
     } finally {
       _isProcessingFrame = false;
     }
@@ -124,14 +138,24 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     final camera = _cameraController!.description;
     final sensorOrientation = camera.sensorOrientation;
 
-    final plane = image.planes.first;
+    final WriteBuffer allBytes = WriteBuffer();
+    for (final Plane plane in image.planes) {
+      allBytes.putUint8List(plane.bytes);
+    }
+    final bytes = allBytes.done().buffer.asUint8List();
+
+    final imageSize = Size(image.width.toDouble(), image.height.toDouble());
+    final rotation = InputImageRotationValue.fromRawValue(sensorOrientation) ??
+        InputImageRotation.rotation0deg;
+    final format = InputImageFormatValue.fromRawValue(image.format.raw) ?? InputImageFormat.nv21;
+
     return InputImage.fromBytes(
-      bytes: plane.bytes,
+      bytes: bytes,
       metadata: InputImageMetadata(
-        size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: InputImageRotationValue.fromRawValue(sensorOrientation) ?? InputImageRotation.rotation0deg,
-        format: InputImageFormat.nv21,
-        bytesPerRow: plane.bytesPerRow,
+        size: imageSize,
+        rotation: rotation,
+        format: format,
+        bytesPerRow: image.planes.first.bytesPerRow,
       ),
     );
   }
@@ -173,9 +197,10 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         title: const Text('Ingresar Código Manualmente', style: TextStyle(color: AppTheme.textPrimary)),
         content: TextField(
           controller: textController,
+          autofocus: true,
           textCapitalization: TextCapitalization.characters,
           decoration: const InputDecoration(
-            hintText: 'Ej: LOB-001, MP21-EN001',
+            hintText: 'Ej: LOB-001, MP21-EN001, SDY-006',
             prefixIcon: Icon(Icons.qr_code, color: AppTheme.primaryGold),
           ),
         ),
@@ -186,24 +211,26 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final code = textController.text.trim();
+              final code = textController.text.trim().toUpperCase();
               if (code.isNotEmpty) {
                 Navigator.pop(ctx);
                 final repo = ref.read(cardRepositoryProvider);
-                final card = await repo.lookupBySetCode(code);
-                if (card != null && mounted) {
+                var card = await repo.lookupBySetCode(code);
+                card ??= CardSetLinkModel(
+                  id: -1,
+                  cardId: -1,
+                  setId: -1,
+                  setCode: code,
+                  setRarity: 'Común',
+                  cardName: 'Carta $code',
+                  type: 'Yu-Gi-Oh! Card',
+                );
+                if (mounted) {
                   _showConfirmationSheet(card);
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('No se encontró la carta con código $code'),
-                      backgroundColor: AppTheme.error,
-                    ),
-                  );
                 }
               }
             },
-            child: const Text('Buscar'),
+            child: const Text('Aceptar'),
           ),
         ],
       ),
@@ -220,15 +247,28 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isCameraInitialized || _cameraController == null) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppTheme.background,
+        appBar: AppBar(
+          title: const Text('Escanear Carta'),
+        ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: AppTheme.primaryGold),
-              SizedBox(height: 16),
-              Text('Iniciando cámara...', style: TextStyle(color: AppTheme.textSecondary)),
+              const CircularProgressIndicator(color: AppTheme.primaryGold),
+              const SizedBox(height: 16),
+              const Text('Iniciando cámara...', style: TextStyle(color: AppTheme.textSecondary)),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _showManualEntryDialog,
+                icon: const Icon(Icons.edit_note, color: Colors.black),
+                label: const Text('Ingresar código manualmente', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryGold,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+              ),
             ],
           ),
         ),
@@ -277,14 +317,14 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
           // Bottom instruction and detection badge
           Positioned(
-            bottom: 40,
+            bottom: 30,
             left: 20,
             right: 20,
             child: Column(
               children: [
                 if (_detectedCodeStatus != null)
                   Container(
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryGold,
@@ -298,14 +338,25 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black87,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppTheme.cardBorder),
                   ),
                   child: const Text(
-                    'Apunta al código de expansión\n(debajo de la ilustración, a la derecha)',
+                    'Apunta al código impreso en la carta (ej. LOB-001)\no pulsa el botón para escribirlo.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: _showManualEntryDialog,
+                  icon: const Icon(Icons.edit_note, color: Colors.black),
+                  label: const Text('Ingresar código manualmente', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGold,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
                 ),
               ],

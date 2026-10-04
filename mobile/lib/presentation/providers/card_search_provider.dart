@@ -45,15 +45,11 @@ class CardSearchNotifier extends StateNotifier<CardSearchState> {
   final CardRepository _repo;
 
   CardSearchNotifier(this._repo) : super(const CardSearchState()) {
+    search('');
     loadSets();
   }
 
   Future<void> search(String query) async {
-    if (query.trim().isEmpty) {
-      state = state.copyWith(cards: [], query: '');
-      return;
-    }
-
     state = state.copyWith(isLoading: true, query: query, error: null);
     try {
       final results = await _repo.searchCards(query);
