@@ -18,3 +18,4 @@ exports/
 .packages
 mobile/.dart_tool/
 mobile/build/
+release_apk/

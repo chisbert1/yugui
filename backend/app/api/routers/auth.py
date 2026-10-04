@@ -69,7 +69,7 @@ async def register(body: RegisterRequest, db: DB) -> dict:
         password_hash=hash_password(body.password),
     )
     db.add(user)
-    await db.flush()
+    await db.commit()
     return {"id": str(user.id), "username": user.username, "email": user.email}
 
 

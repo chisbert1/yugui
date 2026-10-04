@@ -175,6 +175,7 @@ async def add_card(
             "notes": body.notes,
         },
     )
+    await db.commit()
 
     return {
         "card_name": link.card.name,
@@ -218,6 +219,7 @@ async def update_inventory_item(
     if body.notes is not None:
         item.notes = body.notes
 
+    await db.commit()
     return {"message": "Updated.", "id": item_id}
 
 
@@ -239,6 +241,7 @@ async def delete_inventory_item(
     if not item:
         raise HTTPException(404, "Inventory item not found.")
     await db.delete(item)
+    await db.commit()
 
 
 @router.get("/me/stats", response_model=dict)
