@@ -2,29 +2,27 @@
 // ----------------------------------------
 // Specialized parser for extracting Yu-Gi-Oh! card set codes from OCR text.
 // Handles formats like:
-//   - LOB-001
+//   - LOB-001, LOB - 001
 //   - LOB-EN001, LOB-E001, LOB-SP001
 //   - MP21-EN001
 //   - BLVO-EN012
 //   - RA01-EN001
-// Also sanitizes common OCR confusions (spaces around hyphen, O/0, I/1).
 
 class OcrRegex {
   OcrRegex._();
 
-  // Pattern matching: 3-5 chars, hyphen (or space/underscore), 3-6 chars
-  // Examples: "LOB-001", "MP21-EN001", "RA01-EN001", "TLM-ENSE1"
+  // Pattern matching:
+  // Prefix: 2-5 chars, must contain at least one letter (e.g. LOB, MP21, SDK)
+  // Separator: horizontal space, hyphen, or underscore (NEVER newlines)
+  // Suffix: 3-6 chars, must contain at least one digit (e.g. 001, EN001)
   static final RegExp setCodePattern = RegExp(
-    r'\b([A-Z0-9]{3,5})[\s\-_]+([A-Z0-9]{3,6})\b',
-    caseSensitive: false,
+    r'\b([A-Za-z0-9]*[A-Za-z]+[A-Za-z0-9]*)[ \t\-_]+([A-Za-z0-9]*[0-9]+[A-Za-z0-9]*)\b',
   );
 
   /// Cleans raw candidate text, removing spaces and standardizing hyphen
   static String normalizeCandidate(String prefix, String suffix) {
     var p = prefix.trim().toUpperCase();
     var s = suffix.trim().toUpperCase();
-
-    // Fix OCR common mistakes where letters vs digits are misplaced
     return '$p-$s';
   }
 
@@ -41,16 +39,18 @@ class OcrRegex {
         final prefix = match.group(1)!;
         final suffix = match.group(2)!;
 
-        // Filter out obvious false positives like dates (2020-2024), phone numbers, or pure numbers
-        if (RegExp(r'^\d+$').hasMatch(prefix) && RegExp(r'^\d+$').hasMatch(suffix)) {
+        // Prefix length must be between 2 and 5, suffix between 3 and 6
+        if (prefix.length < 2 || prefix.length > 5 || suffix.length < 3 || suffix.length > 6) {
+          continue;
+        }
+
+        // Must have at least one letter in prefix and at least one digit in suffix
+        if (!RegExp(r'[A-Za-z]').hasMatch(prefix) || !RegExp(r'\d').hasMatch(suffix)) {
           continue;
         }
 
         final normalized = normalizeCandidate(prefix, suffix);
-        // Valid set codes are usually between 7 and 12 chars
-        if (normalized.length >= 7 && normalized.length <= 12) {
-          candidates.add(normalized);
-        }
+        candidates.add(normalized);
       }
     }
 
