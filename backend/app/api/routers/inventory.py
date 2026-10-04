@@ -157,7 +157,7 @@ async def add_card(
                 is_for_trade   = EXCLUDED.is_for_trade,
                 is_wishlist    = EXCLUDED.is_wishlist,
                 notes          = COALESCE(EXCLUDED.notes, user_inventory.notes),
-                updated_at     = NOW()
+                updated_at     = CURRENT_TIMESTAMP
         """),
         {
             "id": str(uuid.uuid4()),

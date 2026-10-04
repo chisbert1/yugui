@@ -12,3 +12,9 @@ venv/
 *.db
 *.sqlite
 exports/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+mobile/.dart_tool/
+mobile/build/

@@ -26,6 +26,8 @@ from app.models.master_set import MasterSet
 from app.models.card_sets_link import CardSetsLink
 from app.models.user import User
 
+from sqlalchemy import event
+
 # ── In-memory SQLite engine ───────────────────────────────────────────────────
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -33,6 +35,16 @@ test_engine = create_async_engine(
     TEST_DB_URL,
     connect_args={"check_same_thread": False},
 )
+
+
+@event.listens_for(test_engine.sync_engine, "connect")
+def register_functions(dbapi_connection, connection_record):
+    if hasattr(dbapi_connection, "create_function"):
+        import datetime
+        dbapi_connection.create_function("NOW", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+        dbapi_connection.create_function("now", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+
+
 TestSessionLocal = async_sessionmaker(
     test_engine, class_=AsyncSession, expire_on_commit=False
 )

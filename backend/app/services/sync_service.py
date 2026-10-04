@@ -62,14 +62,14 @@ class SyncService:
         """
         upsert_sql = text("""
             INSERT INTO master_sets (set_name, set_code, set_type, num_of_cards, tcg_date, set_image_url, source_updated_at)
-            VALUES (:set_name, :set_code, :set_type, :num_of_cards, :tcg_date, :set_image_url, NOW())
+            VALUES (:set_name, :set_code, :set_type, :num_of_cards, :tcg_date, :set_image_url, CURRENT_TIMESTAMP)
             ON CONFLICT (set_code) DO UPDATE SET
                 set_name        = EXCLUDED.set_name,
                 set_type        = EXCLUDED.set_type,
                 num_of_cards    = EXCLUDED.num_of_cards,
                 tcg_date        = EXCLUDED.tcg_date,
                 set_image_url   = EXCLUDED.set_image_url,
-                source_updated_at = NOW()
+                source_updated_at = CURRENT_TIMESTAMP
         """)
 
         params = []
@@ -134,7 +134,7 @@ class SyncService:
                 :link_val, :scale, :archetype,
                 :image_url, :image_url_small,
                 :is_banned_tcg, :is_banned_ocg,
-                NOW()
+                CURRENT_TIMESTAMP
             )
             ON CONFLICT (id) DO UPDATE SET
                 name            = EXCLUDED.name,
@@ -153,7 +153,7 @@ class SyncService:
                 image_url_small = EXCLUDED.image_url_small,
                 is_banned_tcg   = EXCLUDED.is_banned_tcg,
                 is_banned_ocg   = EXCLUDED.is_banned_ocg,
-                source_updated_at = NOW()
+                source_updated_at = CURRENT_TIMESTAMP
         """)
 
         card_params = []
@@ -217,14 +217,14 @@ class SyncService:
                 :rarity,
                 :rarity_code,
                 :price_usd,
-                NOW()
+                CURRENT_TIMESTAMP
             FROM master_sets ms
             WHERE ms.set_code = :set_code_prefix
             ON CONFLICT (card_id, set_id, rarity) DO UPDATE SET
                 set_code        = EXCLUDED.set_code,
                 rarity_code     = EXCLUDED.rarity_code,
                 price_usd       = EXCLUDED.price_usd,
-                price_updated_at = NOW()
+                price_updated_at = CURRENT_TIMESTAMP
         """)
         await session.execute(link_upsert, link_params)
 
