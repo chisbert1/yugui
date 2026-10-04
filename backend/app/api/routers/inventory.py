@@ -143,38 +143,41 @@ async def add_card(
         raise HTTPException(404, f"No card found with set code '{code}'.")
 
     # Atomic UPSERT: insert or increment quantity
-    await db.execute(
-        text("""
-            INSERT INTO user_inventory
-                (id, user_id, card_sets_link_id, edition, condition, quantity,
-                 is_foil, acquired_price, is_for_trade, is_wishlist, notes)
-            VALUES
-                (:id, :user_id, :link_id, :edition, :condition, :quantity,
-                 :is_foil, :acquired_price, :is_for_trade, :is_wishlist, :notes)
-            ON CONFLICT (user_id, card_sets_link_id, edition, condition)
-            DO UPDATE SET
-                quantity       = user_inventory.quantity + EXCLUDED.quantity,
-                is_foil        = EXCLUDED.is_foil,
-                acquired_price = COALESCE(EXCLUDED.acquired_price, user_inventory.acquired_price),
-                is_for_trade   = EXCLUDED.is_for_trade,
-                is_wishlist    = EXCLUDED.is_wishlist,
-                notes          = COALESCE(EXCLUDED.notes, user_inventory.notes),
-                updated_at     = CURRENT_TIMESTAMP
-        """),
-        {
-            "id": uuid.uuid4(),
-            "user_id": current_user.id,
-            "link_id": link.id,
-            "edition": body.edition,
-            "condition": body.condition,
-            "quantity": body.quantity,
-            "is_foil": body.is_foil,
-            "acquired_price": body.acquired_price,
-            "is_for_trade": body.is_for_trade,
-            "is_wishlist": body.is_wishlist,
-            "notes": body.notes,
-        },
+    result = await db.execute(
+        select(UserInventory).where(
+            UserInventory.user_id == current_user.id,
+            UserInventory.card_sets_link_id == link.id,
+            UserInventory.edition == body.edition,
+            UserInventory.condition == body.condition,
+        )
     )
+    existing_item = result.scalar_one_or_none()
+
+    if existing_item:
+        existing_item.quantity += body.quantity
+        if body.acquired_price is not None:
+            existing_item.acquired_price = body.acquired_price
+        existing_item.is_foil = body.is_foil
+        existing_item.is_for_trade = body.is_for_trade
+        existing_item.is_wishlist = body.is_wishlist
+        if body.notes is not None:
+            existing_item.notes = body.notes
+    else:
+        new_item = UserInventory(
+            id=uuid.uuid4(),
+            user_id=current_user.id,
+            card_sets_link_id=link.id,
+            edition=body.edition,
+            condition=body.condition,
+            quantity=body.quantity,
+            is_foil=body.is_foil,
+            acquired_price=body.acquired_price,
+            is_for_trade=body.is_for_trade,
+            is_wishlist=body.is_wishlist,
+            notes=body.notes,
+        )
+        db.add(new_item)
+
     await db.commit()
 
     return {
