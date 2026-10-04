@@ -26,23 +26,26 @@ from app.models.master_set import MasterSet
 from app.models.card_sets_link import CardSetsLink
 from app.models.user import User
 
+import os
 from sqlalchemy import event
 
-# ── In-memory SQLite engine ───────────────────────────────────────────────────
-TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
+# ── Database engine (PostgreSQL in CI, SQLite fallback) ──────────────────────
+TEST_DB_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
+connect_args = {"check_same_thread": False} if "sqlite" in TEST_DB_URL else {}
 test_engine = create_async_engine(
     TEST_DB_URL,
-    connect_args={"check_same_thread": False},
+    connect_args=connect_args,
 )
 
 
-@event.listens_for(test_engine.sync_engine, "connect")
-def register_functions(dbapi_connection, connection_record):
-    if hasattr(dbapi_connection, "create_function"):
-        import datetime
-        dbapi_connection.create_function("NOW", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
-        dbapi_connection.create_function("now", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+if "sqlite" in TEST_DB_URL:
+    @event.listens_for(test_engine.sync_engine, "connect")
+    def register_functions(dbapi_connection, connection_record):
+        if hasattr(dbapi_connection, "create_function"):
+            import datetime
+            dbapi_connection.create_function("NOW", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+            dbapi_connection.create_function("now", 0, lambda: datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
 
 
 TestSessionLocal = async_sessionmaker(

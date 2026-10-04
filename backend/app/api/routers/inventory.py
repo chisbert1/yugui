@@ -162,8 +162,8 @@ async def add_card(
                 updated_at     = CURRENT_TIMESTAMP
         """),
         {
-            "id": str(uuid.uuid4()),
-            "user_id": str(current_user.id),
+            "id": uuid.uuid4(),
+            "user_id": current_user.id,
             "link_id": link.id,
             "edition": body.edition,
             "condition": body.condition,
