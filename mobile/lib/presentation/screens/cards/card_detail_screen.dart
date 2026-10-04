@@ -38,7 +38,6 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
     final printings = await repo.getCardPrintings(widget.cardId);
 
     // Look up card details
-    final cards = await repo.searchCards('', limit: 1); // fallback
     setState(() {
       _printings = printings;
       if (printings.isNotEmpty) {

@@ -39,7 +39,6 @@ class DatabaseHelper {
 
   Future<Database> _initCardDb() async {
     final path = await getCardDbPath();
-    final file = File(path);
 
     // If card DB doesn't exist yet, create a baseline schema
     // (This will be replaced completely when full lite DB is downloaded from backend)

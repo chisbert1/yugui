@@ -30,6 +30,7 @@ class AddCardRequest(BaseModel):
     edition: str = Field(default="Unlimited")
     condition: str = Field(default="Near Mint")
     quantity: int = Field(default=1, ge=1, le=999)
+    is_foil: bool = False
     acquired_price: float | None = None
     is_for_trade: bool = False
     is_wishlist: bool = False
@@ -146,13 +147,14 @@ async def add_card(
         text("""
             INSERT INTO user_inventory
                 (id, user_id, card_sets_link_id, edition, condition, quantity,
-                 acquired_price, is_for_trade, is_wishlist, notes)
+                 is_foil, acquired_price, is_for_trade, is_wishlist, notes)
             VALUES
                 (:id, :user_id, :link_id, :edition, :condition, :quantity,
-                 :acquired_price, :is_for_trade, :is_wishlist, :notes)
+                 :is_foil, :acquired_price, :is_for_trade, :is_wishlist, :notes)
             ON CONFLICT (user_id, card_sets_link_id, edition, condition)
             DO UPDATE SET
                 quantity       = user_inventory.quantity + EXCLUDED.quantity,
+                is_foil        = EXCLUDED.is_foil,
                 acquired_price = COALESCE(EXCLUDED.acquired_price, user_inventory.acquired_price),
                 is_for_trade   = EXCLUDED.is_for_trade,
                 is_wishlist    = EXCLUDED.is_wishlist,
@@ -166,6 +168,7 @@ async def add_card(
             "edition": body.edition,
             "condition": body.condition,
             "quantity": body.quantity,
+            "is_foil": body.is_foil,
             "acquired_price": body.acquired_price,
             "is_for_trade": body.is_for_trade,
             "is_wishlist": body.is_wishlist,

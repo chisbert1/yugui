@@ -21,6 +21,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -66,7 +67,9 @@ class UserInventory(Base):
         #          'Moderately Played', 'Heavily Played', 'Damaged'
     )
     quantity: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1)
-    is_foil: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_foil: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # ── Price tracking ───────────────────────────────────────────────────────
