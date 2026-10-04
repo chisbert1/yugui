@@ -51,10 +51,10 @@ async def create_tables():
 @pytest_asyncio.fixture(autouse=True)
 async def clean_db_per_test():
     """Wipe tables before each test to guarantee absolute test isolation."""
-    yield
     async with test_engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             await conn.execute(table.delete())
+    yield
 
 
 @pytest_asyncio.fixture

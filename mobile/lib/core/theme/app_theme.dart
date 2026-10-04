@@ -101,14 +101,6 @@ class AppTheme {
         iconTheme: IconThemeData(color: primaryGold),
         titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
       ),
-      cardTheme: CardThemeData(
-        color: surface,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: cardBorder, width: 1),
-        ),
-      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceVariant,
