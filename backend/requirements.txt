@@ -24,6 +24,7 @@ tenacity==9.0.0              # retry with exponential backoff
 # ─── Config ──────────────────────────────────────────────────────
 pydantic==2.9.2
 pydantic-settings==2.5.2
+email-validator>=2.0.0
 
 # ─── Scheduler (background jobs) ─────────────────────────────────
 apscheduler==3.10.4

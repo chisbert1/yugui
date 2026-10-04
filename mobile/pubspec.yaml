@@ -1,0 +1,57 @@
+name: yugioh_collector
+description: Yu-Gi-Oh! Card Collector — Offline-first mobile app with OCR scanning.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── State Management ──────────────────────────────────────────
+  flutter_riverpod: ^2.5.1
+
+  # ── Navigation ────────────────────────────────────────────────
+  go_router: ^14.2.7
+
+  # ── Network ───────────────────────────────────────────────────
+  dio: ^5.7.0
+
+  # ── Local Database ────────────────────────────────────────────
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+  path_provider: ^2.1.4
+
+  # ── OCR (Google ML Kit) ───────────────────────────────────────
+  google_mlkit_text_recognition: ^0.14.0
+  camera: ^0.11.0+2
+
+  # ── Image Caching ─────────────────────────────────────────────
+  cached_network_image: ^3.4.1
+
+  # ── Auth / Secure Storage ─────────────────────────────────────
+  flutter_secure_storage: ^9.2.2
+  jwt_decoder: ^2.0.1
+
+  # ── Connectivity ──────────────────────────────────────────────
+  connectivity_plus: ^6.0.5
+
+  # ── UI & Typography ───────────────────────────────────────────
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+
+  # ── Utilities ─────────────────────────────────────────────────
+  intl: ^0.19.0
+  uuid: ^4.4.2
+  permission_handler: ^11.3.1
+  crypto: ^3.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
